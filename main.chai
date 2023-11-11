@@ -1,0 +1,157 @@
+global gameOver = false;
+global width = 0;
+global height = 0;
+global size = 0;
+global x;
+global y;
+global fruitX;
+global fruitY;
+global score;
+global dir = -1;
+global tail = Vector();  // List to store the snake's body segments
+global numSegments = 0;
+global directions = ["STOP": 0, "LEFT": 1, "RIGHT": 2, "UP": 3, "DOWN": 4];
+global t = 0.0f
+
+def load() {
+    print("------------------ LOAD ------------------");
+    width = love.graphics.getWidth();
+    height = love.graphics.getHeight();
+    x = width / 2;
+    y = height / 2;
+    size = height / 100;
+    moveFruit()
+    score = 0;
+    print("Screen width: "+to_string(width));
+    print("Screen height: "+to_string(height));
+    print("Fruit at: "+to_string(fruitX)+","+to_string(fruitY));
+    print("Size: "+to_string(size));
+}
+
+def squaresOverlap(x0, y0, x1, y1, x2, y2, x3, y3) {
+    // If one rectangle is to the left of the other, or if one rectangle is above the other, then they do not overlap
+    if (x1 < x2 || x3 < x0 || y1 < y2 || y3 < y0) {
+        return false;
+    }
+
+    // If neither of the above conditions is true, then the rectangles overlap
+    return true;
+}
+
+def moveFruit() {
+    fruitX = love.math.random(size/2, width-size/2);
+    fruitY = love.math.random(size/2, height-size/2);
+}
+
+def joystickpressed(joy, key) {
+    switch (key) {
+      case ("left") {
+          dir = directions["LEFT"];
+          break;
+      }
+      case ("right") {
+          dir = directions["RIGHT"];
+          break;
+      }
+      case ("up") {
+          dir = directions["UP"];
+          break;
+      }
+      case ("down") {
+          dir = directions["DOWN"];
+          break;
+      }
+      default {
+          print("Unexpected key pressed: "+key);
+      }
+    }
+}
+
+
+
+def update(dt) {
+    if (gameOver) {
+        return;
+    }
+
+    t = t + dt
+    if (t >= 0.08f) {
+		t = 0.0f
+	}
+	else {
+		return;
+	}
+
+    var oldX = x;  // Store the old head position
+    var oldY = y;
+
+    switch (dir) {
+        case (directions["LEFT"]) {
+            x = x - size;
+            break;
+        }
+        case (directions["RIGHT"]) {
+            x = x + size;
+            break;
+        }
+        case (directions["UP"]) {
+            y = y - size;
+            break;
+        }
+        case (directions["DOWN"]) {
+            y = y + size;
+            break;
+        }
+        default {
+
+        }
+    }
+
+    // Add the old head position to the list of body segments
+    tail.insert_at(0,[oldX, oldY]);
+  
+    if (x < 0 || x+size >= width || y < 0 || y+size >= height) {
+        gameOver = true;
+        return;
+    }
+  
+    if (squaresOverlap(x,y,x+size,y+size,fruitX-size/2,fruitY-size/2,fruitX+size/2,fruitY+size/2)) {
+        score = score + 10;
+        moveFruit()
+        numSegments = numSegments +1;
+    }
+
+    if (tail.size() > numSegments) {
+        tail.pop_back();
+    }
+} 
+
+def draw() {
+    if (gameOver) {
+        love.graphics.print("Game Over!");
+    }
+
+    // Draw the snake's body segments
+    for (var i = 0; i < tail.size(); ++i) {
+        love.graphics.rectangle("fill", tail[i][0], tail[i][1], size, size);
+    }
+
+    // Draw a square for the snake
+    love.graphics.rectangle("fill", x, y, size, size);
+
+    // Draw a circle for the fruit
+    love.graphics.circle("fill", fruitX, fruitY, size / 2);
+    love.graphics.print("Score: " + to_string(score), 10, 10);
+
+    // love.graphics.setColor(0, 0, 255); 
+    // love.graphics.print(to_string(x)+","+to_string(y), x, y);
+    // love.graphics.print(to_string(x+size)+","+to_string(y), x+size, y);
+    // love.graphics.print(to_string(x)+","+to_string(y+size), x, y+size);
+    // love.graphics.print(to_string(x+size)+","+to_string(y+size), x+size, y+size);
+    // love.graphics.print(to_string(fruitX)+","+to_string(fruitY), fruitX, fruitY);
+
+
+     // Draw a 1 pixel border around the play area
+    love.graphics.setColor(255, 255, 255);  // Set the color to white
+    love.graphics.rectangle("line", 0, 0, width-1, height-1);  // Draw the border
+}
